@@ -1,3 +1,15 @@
+//
+// adafruit 
+//   https://learn.adafruit.com/dht/overview  great tutorial
+//    https://github.com/adafruit/DHT-sensor-library
+//    https://github.com/adafruit/Adafruit_Sensor
+// 
+// Sheepdoog guide http://sheepdogguides.com/arduino/ar3ne1humDHT11.htm
+//
+// http://playground.arduino.cc/main/DHT11Lib
+//
+// DHT11/22 explanation on how the thing works
+// http://dalxxdht11.blogspot.nl/2012/12/dht11-library-for-arduino-uno.html
 
 byte bGlobalErr; // for passing error code
 byte data[5]; // Array for storing data sent from sensor
