@@ -15,12 +15,10 @@ byte bGlobalErr; // for passing error code
 byte data[5]; // Array for storing data sent from sensor
 float lastHumidity;
 float lastTemperatureC;
-
-const int ledPin = 13; //setting up the LED on UNO to be used
+int dht_pin = 2;  //data pin to which the sensor it connected to
 const byte mask = 0x7f;
 
-int ledState = LOW; // setting intial state to be used to off
-int dht_pin = 2;
+
 
 void setup() {
   pinMode(dht_pin, OUTPUT);
