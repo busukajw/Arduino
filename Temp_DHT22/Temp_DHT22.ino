@@ -1,3 +1,6 @@
+#include <SoftwareSerial.h>
+#include <XBee.h>
+
 //
 // adafruit 
 //   https://learn.adafruit.com/dht/overview  great tutorial
@@ -12,22 +15,29 @@
 // http://dalxxdht11.blogspot.nl/2012/12/dht11-library-for-arduino-uno.html
 
 byte bGlobalErr; // for passing error code
-byte data[5]; // Array for storing data sent from sensor
+byte data[5]; // Array for storing data sent from sensor which will be sent home via ZigBee
 float lastHumidity;
 float lastTemperatureC;
 int dht_pin = 2;  //data pin to which the sensor it connected to
 const byte mask = 0x7f;
+SoftwareSerial sserial(12,13);
 
-
+// create XBee object
+XBee xbee = XBee();
+// SH + LH Address of recieving XBee
+XBeeAddress64 addr64 = XBeeAddress64(0x0013A200, 0x40C82BEC);
+ZBTxRequest zbTx = ZBTxRequest(addr64, data, sizeof(data));
+ZBTxStatusResponse txStatus = ZBTxStatusResponse();
 
 void setup() {
   pinMode(dht_pin, OUTPUT);
   digitalWrite(dht_pin, HIGH);
   Serial.begin(9600);
+  sserial.begin(9600);
   delay(1000); // let the system settle before interegating dht22
+  xbee.setSerial(sserial);
   Serial.println("Humidity and tempreture Sensor DHT22\n\n");
   delay(1000);
-  pinMode(ledPin, OUTPUT);
 
 }
 
@@ -59,6 +69,28 @@ void loop() {
       Serial.print("Temp: ");
       Serial.print(lastTemperatureC);
       Serial.println("C");
+      xbee.send(zbTx);
+      // wait up to half a second for thr status response
+      if (xbee.readPacket(500)) {
+        // got a response
+        // should be a znet tx response
+        if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
+          xbee.getResponse().getZBTxStatusResponse(txStatus);
+          //get the delviery status
+          if (txStatus.getDeliveryStatus() == SUCCESS) {
+            Serial.println("Sent Data to Pi");
+          }
+          else if (xbee.getResponse().isError()) {
+            // the reomore did not recieve packet
+            Serial.print("Error Reading packet. Error Code: ");
+            Serial.println(xbee.getResponse().getErrorCode());
+          }
+          else {
+            // did not receive a timely Tx Status Response -- doh
+            Serial.println("No Tx Status Response");
+          }
+        }
+      }
       break;
     case 1:
       Serial.println("Error 1: DHT 22 start condition 1 not met.");
