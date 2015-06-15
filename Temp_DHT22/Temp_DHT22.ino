@@ -57,24 +57,15 @@ void loop() {
   ZBTxRequest zbTx = ZBTxRequest(addr64, (uint8_t *)payload, sizeof(payload));
   switch (bGlobalErr) {
     case 0:
-     
-
-      Serial.print("Temp: ");
-      Serial.print(lastTemperatureC);
-      Serial.println("C");
-      //convert Temp and Humidty to chars
-      dtostrf(lastTemperatureC, 1, 1, charTemp);
-      dtostrf(lastHumidity, 1, 1, charHum);
-      //build string to send to remote XBee
-      strcpy(payload,"{temp:");
-      strcat(payload, charTemp);
-      strcat(payload,",humidity:");
-      strcat(payload, charHum);
-      strcat(payload,"}");
-      Serial.println(payload);
+    //call temperature function
+      sepTemp();
+    //call humidity function
+      sepHum();
+      convJson();
       // create ZBTx frame
       // send the frame
       xbee.send(zbTx);
+      // need to add some basic checking here that the actual packet got sent
       break;
     case 1:
       Serial.println("Error 1: DHT 22 start condition 1 not met.");
@@ -110,6 +101,21 @@ byte read_dht_data() {
     while (digitalRead(dht_pin) == HIGH);
   };
   return result;
+}
+
+void convJson() {
+ /* Take the humidity and temperature floats and convert them to a string and then 
+ turn the structure into some json
+ */
+      //convert Temp and Humidty to chars
+      dtostrf(lastTemperatureC, 1, 1, charTemp);
+      dtostrf(lastHumidity, 1, 1, charHum);
+      //build string to send to remote XBee
+      strcpy(payload,"{temp:");
+      strcat(payload, charTemp);
+      strcat(payload,",humidity:");
+      strcat(payload, charHum);
+      strcat(payload,"}");
 }
 
 void collectHumidity() {
