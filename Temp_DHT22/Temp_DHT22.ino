@@ -18,24 +18,34 @@ byte bGlobalErr; // for passing error code
 byte data[5]; // Array for storing data sent from sensor which will be sent home via ZigBee
 float lastHumidity;
 float lastTemperatureC;
+char charTemp[8];
+char charHum[8];
+
+// define SoftSerial RX,TXpins 
+uint8_t ssRX = 11;
+uint8_t ssTX = 12 ;
+
 int dht_pin = 2;  //data pin to which the sensor it connected to
 const byte mask = 0x7f;
-SoftwareSerial sserial(12,13);
 
-// create XBee object
+// Create the SoftSerial obj and connect it to the RX and TX
+SoftwareSerial nss(ssRX,ssTX);
+//Create xbee obejct
 XBee xbee = XBee();
-// SH + LH Address of recieving XBee
-XBeeAddress64 addr64 = XBeeAddress64(0x0013A200, 0x40C82BEC);
-ZBTxRequest zbTx = ZBTxRequest(addr64, data, sizeof(data));
+char payload[30]; // this is the buffer we will fill up with temp & humitdy info
+// address of remote XBee
+XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40C822DD);
+// create a txStatus we need this to find out the status of the sent payload
 ZBTxStatusResponse txStatus = ZBTxStatusResponse();
 
 void setup() {
   pinMode(dht_pin, OUTPUT);
   digitalWrite(dht_pin, HIGH);
   Serial.begin(9600);
-  sserial.begin(9600);
+  // set baud rate of soft seerial and bind to the xbee
+  nss.begin(9600);
+  xbee.setSerial(nss);
   delay(1000); // let the system settle before interegating dht22
-  xbee.setSerial(sserial);
   Serial.println("Humidity and tempreture Sensor DHT22\n\n");
   delay(1000);
 
@@ -44,53 +54,27 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   ReadDHT();
+  ZBTxRequest zbTx = ZBTxRequest(addr64, (uint8_t *)payload, sizeof(payload));
   switch (bGlobalErr) {
     case 0:
-      /* GlobalErr 0 means no error.
-      Received bytes are 10 times the value.
-      Therefore 256 * first word + second represent 10 times the humidity or
-      Tempreture. Most significant Bit of data[2] tells us if the temp is either
-      positive or negative.  0 positivie 1 neg temp.
-      */
-      lastHumidity = (data[0] * 256 + data[1]);
-      lastHumidity = lastHumidity / 10;
-      Serial.print("Humidity: ");
-      Serial.print(lastHumidity);
-      Serial.println("%");
-      // check the MSB of data[2] for negative temp
-      if ((data[2] & mask) != data[2]) {
-        data[2] = data[2] & mask;
-        lastTemperatureC = -1 * (data[2] * 256 + data[3]);
-      }
-      else {
-        lastTemperatureC = (data[2] * 256 + data[3]);
-      }
-      lastTemperatureC = lastTemperatureC / 10;
+     
+
       Serial.print("Temp: ");
       Serial.print(lastTemperatureC);
       Serial.println("C");
+      //convert Temp and Humidty to chars
+      dtostrf(lastTemperatureC, 1, 1, charTemp);
+      dtostrf(lastHumidity, 1, 1, charHum);
+      //build string to send to remote XBee
+      strcpy(payload,"{temp:");
+      strcat(payload, charTemp);
+      strcat(payload,",humidity:");
+      strcat(payload, charHum);
+      strcat(payload,"}");
+      Serial.println(payload);
+      // create ZBTx frame
+      // send the frame
       xbee.send(zbTx);
-      // wait up to half a second for thr status response
-      if (xbee.readPacket(500)) {
-        // got a response
-        // should be a znet tx response
-        if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
-          xbee.getResponse().getZBTxStatusResponse(txStatus);
-          //get the delviery status
-          if (txStatus.getDeliveryStatus() == SUCCESS) {
-            Serial.println("Sent Data to Pi");
-          }
-          else if (xbee.getResponse().isError()) {
-            // the reomore did not recieve packet
-            Serial.print("Error Reading packet. Error Code: ");
-            Serial.println(xbee.getResponse().getErrorCode());
-          }
-          else {
-            // did not receive a timely Tx Status Response -- doh
-            Serial.println("No Tx Status Response");
-          }
-        }
-      }
       break;
     case 1:
       Serial.println("Error 1: DHT 22 start condition 1 not met.");
@@ -126,6 +110,42 @@ byte read_dht_data() {
     while (digitalRead(dht_pin) == HIGH);
   };
   return result;
+}
+
+void collectHumidity() {
+   /*
+   Take out the humidity data and convert to a percentage
+      Received bytes are 10 times the value.
+      Therefore 256 * first word + second represent 10 times the humidity or
+      Temperature.
+      */
+      lastHumidity = (data[0] * 256 + data[1]);
+      lastHumidity = lastHumidity / 10;
+      Serial.print("Humidity: ");
+      Serial.print(lastHumidity);
+      Serial.println("%");
+      return;
+}
+
+void sepTemp(){
+/*
+      Take out the temp data from the collected data and convert to celcius
+      Received bytes are 10 times the value.
+      Therefore 256 * first word + second represent 10 times the humidity or
+      Temperature. Most significant Bit of data[2] tells us if the temp is either
+      positive or negative.  0 positivie 1 neg temp.
+      check the MSB of data[2] for negative temp
+*/
+      if ((data[2] & mask) != data[2]) {
+        data[2] = data[2] & mask;
+        lastTemperatureC = -1 * (data[2] * 256 + data[3]);
+      }
+      else {
+        lastTemperatureC = (data[2] * 256 + data[3]);
+      }
+      lastTemperatureC = lastTemperatureC / 10;
+      return;
+
 }
 void ReadDHT() {
   /* Uses the global vaiables data[5] and bGlobalErr to pass
