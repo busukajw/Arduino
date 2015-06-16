@@ -118,7 +118,7 @@ void convJson() {
       strcat(payload,"}");
 }
 
-void collectHumidity() {
+void sepHum() {
    /*
    Take out the humidity data and convert to a percentage
       Received bytes are 10 times the value.
