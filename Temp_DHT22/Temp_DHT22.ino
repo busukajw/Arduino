@@ -32,7 +32,7 @@ const byte mask = 0x7f;
 SoftwareSerial nss(ssRX,ssTX);
 //Create xbee obejct
 XBee xbee = XBee();
-char payload[30]; // this is the buffer we will fill up with temp & humitdy info
+char payload[128]; // this is the buffer we will fill up with temp & humitdy info
 // address of remote XBee
 XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40C822DD);
 // create a txStatus we need this to find out the status of the sent payload
@@ -111,11 +111,14 @@ void convJson() {
       dtostrf(lastTemperatureC, 1, 1, charTemp);
       dtostrf(lastHumidity, 1, 1, charHum);
       //build string to send to remote XBee
-      strcpy(payload,"{temp:");
+      for (int i=0; i< 128; i++){
+          payload[i]='\0';
+      }
+      strcpy(payload,"{\"temp\":");
       strcat(payload, charTemp);
-      strcat(payload,",humidity:");
+      strcat(payload,",\"humidity\":");
       strcat(payload, charHum);
-      strcat(payload,"}");
+      strcat(payload,"}\0");
 }
 
 void sepHum() {
