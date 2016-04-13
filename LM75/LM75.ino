@@ -14,11 +14,9 @@ uint16_t tempdata(byte *a, byte *b)
   Serial.println(*a,HEX);
   Serial.print("Non-Shifted in binary: ");
   Serial.println(*b, BIN);
-  //not sure this is needed as I am only going to shift the first 
-  //3 bits onto the back of the MSB
-  *b = *b >> 5; // shift the first 5 bits's off the byte
-  Serial.print("shifted: ");
-  Serial.println(*b, BIN);
+  *b = *b >> 5; // shift the last 5 bits's off the byte
+  //Serial.print("shifted: ");
+  //Serial.println(*b, BIN);
   // if the temperature is negative the fist bit of the MSB will be 1
   bitcheck = *a & 0x80; // so create and apply mask 10000000:
   if (bitcheck) { // 1 pass's bool test so is a negative number
