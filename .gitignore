@@ -1,4 +1,15 @@
 .DS_Store
-libraries
+libraries/Adafruit_DHT_Unified/
+libraries/Adafruit_Unified_Sensor/
+libraries/AltSoftSerial/
+libraries/Bridge/
+libraries/DHT_sensor_library/
+libraries/Ethernet/
+libraries/Firmata/
+libraries/Keyboard/
+libraries/Mouse/
+libraries/SensorOp/
+libraries/XBee-Arduino_library/
+libraries/readme.txt
 DHT_Unified_Sensor
 
