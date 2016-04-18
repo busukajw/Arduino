@@ -1,7 +1,7 @@
 #ifndef LM75A_h
 #define LM75A_h
 
-include "Arduino.h"
+#include "Arduino.h"
 
 #define LM75_ADDR 0x4F
 #define LM75_TEMP 0
@@ -11,13 +11,15 @@ include "Arduino.h"
 class LM75A
 {
   public:
-    LM75A(int);
+    LM75A();
+    LM75A(int address);
     float getTemp();
    private:
-    void _getData(uint8_t, uint8_t);
-    void _reg2Data(uint8_t, uint8_t);
-    float _convData2Temp(uint16_t, uint8_t)
+    int _address;
+    void _getData(byte*, byte*);
+    uint16_t _reg2Data(byte*, byte*);
+    float _convData2Temp(uint16_t*, byte*);
 
-}
+};
 
 #endif
