@@ -28,14 +28,31 @@ void setup() {
 }
 
 void loop() {
+  
   // put your main code here, to run repeatedly:
+  setDac(encoder.getPosition());
 
+}
+// function to set the dac
+void setDac(int rEncoderNumber){
+  byte initConfbyte = 0b00110000;
+  /* shift the 12bit number 8bits to the right. So that the 1st 4 bits are now the last 4 bits
+   * then OR the number with the mask this creates the first byte
+   */
+  byte primaryByte = (rEncoderNumber >> 8) | initConfbyte;
+  byte mask = 0b00001111;
+  byte secondaryByte =  rEncoderNumber & mask ;
+  noInterrupts();  //disable interrupts so the rotorary encoder does not interrupt the SPI comms
+  digitalWrite(dacSlaveSelectPin, LOW); // pull the DAC low to get ready to send some data
+  SPI.transfer(primaryByte); //send the first byte
+  SPI.transfer(secondaryByte); //send the second byte
+  interrupts(); // turn interrupts back on
 }
 void doEncoder(){
   /* if PinA and pinB are both high or both low it is spinning forward (CW)
    *  if they are different it is going backward (CCW)
    */
   encoder.update();
-  Serial.println( encoder.getPosition() );   
+  // Serial.println( encoder.getPosition() );   
 }
 
