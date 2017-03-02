@@ -49,7 +49,7 @@ void setDac(int rEncoderNumber){
   SPI.transfer(secondaryByte); //send the second byte
   interrupts(); // turn interrupts back on
   SPI.end();
-  digitalWrite(SlaveSelectionPin, HIGH);
+  digitalWrite(dacSlaveSelectPin, HIGH);
 }
 void doEncoder(){
   /* if PinA and pinB are both high or both low it is spinning forward (CW)
