@@ -37,7 +37,8 @@ void loop() {
 void setDac(int rEncoderNumber){
   byte initConfbyte = 0b00110000;
   /* shift the 12bit number 8bits to the right. So that the 1st 4 bits are now the last 4 bits
-   * then OR the number with the mask this creates the first byte
+   * then OR the number with the mask the primary byte now has the config data as the first 4 bits
+   * and the first 4 bits of the rotary encoder are now the last 4 bits of the primaryByte
    */
   byte primaryByte = (rEncoderNumber >> 8) | initConfbyte;
   byte mask = 0b00001111;
@@ -47,6 +48,8 @@ void setDac(int rEncoderNumber){
   SPI.transfer(primaryByte); //send the first byte
   SPI.transfer(secondaryByte); //send the second byte
   interrupts(); // turn interrupts back on
+  SPI.end();
+  digitalWrite(SlaveSelectionPin, HIGH);
 }
 void doEncoder(){
   /* if PinA and pinB are both high or both low it is spinning forward (CW)
