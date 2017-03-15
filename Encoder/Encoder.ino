@@ -9,6 +9,9 @@
 Encoder encoder(2,6);
 //set the SPI DAC SS pin
 const int dacSlaveSelectPin = 9;
+const int adcSlaveSelectPin = 10;
+// the resistor values use to reverse the voltage divider
+
 SPISettings mySettings;
 
 void setup() {
@@ -32,7 +35,13 @@ void loop() {
   // put your main code here, to run repeatedly:
   Serial.print("Encoder Position: ");
   Serial.println(encoder.getPosition());
-  setDac(encoder.getPosition());
+  //setDac(encoder.getPosition());
+  float adcValue = readAdc(1);
+  float realVolts = voltageOut(adcValue);
+  Serial.print("Raw Value ");
+  Serial.println(adcValue);
+  Serial.print("Channel 0 : ");
+  Serial.println(realVolts);
   Serial.println("End");
   delay(200);
 }
@@ -41,19 +50,28 @@ float readAdc(int channel) {
   byte primaryMask = B00001111;
   mySettings = SPISettings(1000000, MSBFIRST, SPI_MODE0);
   noInterrupts();
-  digitalWrite(adcChipSelectionPin, LOW);
+  digitalWrite(adcSlaveSelectPin, LOW);
   SPI.beginTransaction(mySettings);
   byte ersteConfByte = B00000110;
   byte tweedeConfByte = channel<< 6;
-  SPI.transfer(ersteConfByte)
+  SPI.transfer(ersteConfByte);
   byte firstHalf = SPI.transfer(tweedeConfByte);
   byte secondHalf = SPI.transfer(0x00);
-  digitalWrite(adcChipSelectionPin, HIGH);
+  digitalWrite(adcSlaveSelectPin, HIGH);
   interrupts();
   SPI.endTransaction();
   firstHalf &= primaryMask;
   int adcNumber = (firstHalf << 8) | secondHalf;
   float value = (adcNumber * 2.048) / 4096.000;
+  /*Serial.print("First Byte : ");
+  Serial.println(firstHalf,BIN);
+  Serial.print("Second Byte : ");
+  Serial.println(secondHalf,BIN);
+  Serial.print("Combined : ");
+  Serial.println(adcNumber,BIN);
+  Serial.print("Voltage : ");
+  Serial.println(value);
+  */
   return value;
 }
   
@@ -84,4 +102,24 @@ void doEncoder(){
   encoder.update();
   // Serial.println( encoder.getPosition() );   
 }
+float voltageOut(float adcNumber){
+  /* function which reverses the result of the voltage divider
+   * so we can display the the actual voltage.  This should work
+   * for showing both the voltage input and the Current being 
+   * pulled
+    */
+   const long r1 = 217000;
+   const long r2 = 17950;
+   long totalRes = r1 + r2; // 252900
+   float number = adcNumber / r2;
+   float vOut =   number * totalRes;
+   Serial.print("ADC Number : ");
+   Serial.println(adcNumber);
+   Serial.print("total resistance: ");
+   Serial.println(totalRes);
+   Serial.print("Voltage = ");
+   Serial.println(number,7);
+   return vOut;
+}
+
 
