@@ -2,7 +2,8 @@
 #include "Arduino.h"
 #include "Encoder.h"
 
-Encoder::Encoder( int8_t PinA, int8_t PinC ): pin_a(PinA), pin_c(PinC) {
+Encoder::Encoder( int8_t PinA, int8_t PinC ): 
+	pin_a(PinA), pin_c(PinC), position(0) {
 // set pin a and pin c as inputs
 	pinMode(pin_a, INPUT);
     pinMode(pin_c, INPUT);
