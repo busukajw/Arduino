@@ -1,3 +1,4 @@
+#include <LiquidCrystal.h>
 #include <Encoder.h>
 #include <SPI.h>
 
@@ -5,10 +6,21 @@
  *  Encoder is hooked up to common GROUND
  *  encoder0PinA to Pin 2
  *  encoder0PinB to Pin4
+ *  LCD Pins
+ *  RS ->4
+ *  E  ->5
+ *  D4 ->6
+ *  D5 ->7
+ *  D6 ->8
+ *  D7 ->9
+ *  R/W, VSS -> GRD
  */
-Encoder encoder(2,6);
+
+LiquidCrystal lcd(4,5,6,7,8,9);
+
+Encoder encoder(2,1);
 //set the SPI DAC SS pin
-const int dacSlaveSelectPin = 9;
+const int dacSlaveSelectPin = 3;
 const int adcSlaveSelectPin = 10;
 // the resistor values use to reverse the voltage divider
 
@@ -17,33 +29,34 @@ SPISettings mySettings;
 void setup() {
   // put your setup code here, to run once:
  
-  attachInterrupt(0, doEncoder, CHANGE); //attach interrupt 0 - pin2 
-  Serial.begin(9600);
-  Serial.println("Start");
+  //attachInterrupt(0, doEncoder, CHANGE); //attach interrupt 0 - pin2 
+  lcd.begin(16,2);
+  lcd.print("Volts: ");
+  lcd.setCursor(1,0);
+  lcd.print("Current:");
 
- 
+  SPI.begin(); 
   pinMode(dacSlaveSelectPin, OUTPUT);
   //set the pin HIGH initially.  You need to set it LOW when you wish to use the SPI data
   digitalWrite(dacSlaveSelectPin, HIGH);
   //setup the SPI bus
-  SPI.begin();
 
 }
 
 void loop() {
   
   // put your main code here, to run repeatedly:
-  Serial.print("Encoder Position: ");
-  Serial.println(encoder.getPosition());
-  //setDac(encoder.getPosition());
+  //Serial.print("Encoder Position: ");
+  //Serial.println(encoder.getPosition());
+  setDac(encoder.getPosition());
   float adcValue = readAdc(1);
   float realVolts = voltageOut(adcValue);
-  Serial.print("Raw Value ");
-  Serial.println(adcValue);
-  Serial.print("Channel 0 : ");
-  Serial.println(realVolts);
-  Serial.println("End");
-  delay(200);
+  float adcCurrent = readAdc(0);
+  lcd.setCursor(7,0);
+  lcd.print(realVolts,3);
+  lcd.setCursor(9,1);
+  lcd.print(adcCurrent);
+  delay(400);
 }
 // function to read from the ADC
 float readAdc(int channel) {
@@ -60,21 +73,14 @@ float readAdc(int channel) {
   digitalWrite(adcSlaveSelectPin, HIGH);
   interrupts();
   SPI.endTransaction();
+  Serial.print("First Byte : ");
+  Serial.println(firstHalf,BIN);
   firstHalf &= primaryMask;
   int adcNumber = (firstHalf << 8) | secondHalf;
   float value = (adcNumber * 2.048) / 4096.000;
-  /*Serial.print("First Byte : ");
-  Serial.println(firstHalf,BIN);
-  Serial.print("Second Byte : ");
-  Serial.println(secondHalf,BIN);
-  Serial.print("Combined : ");
-  Serial.println(adcNumber,BIN);
-  Serial.print("Voltage : ");
-  Serial.println(value);
-  */
   return value;
 }
-  
+
 // function to set the dac
 void setDac(int rEncoderNumber){
   mySettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
@@ -100,7 +106,7 @@ void doEncoder(){
    *  if they are different it is going backward (CCW)
    */
   encoder.update();
-  // Serial.println( encoder.getPosition() );   
+  // Serial.println( encoder.getPosition() );
 }
 float voltageOut(float adcNumber){
   /* function which reverses the result of the voltage divider
@@ -113,12 +119,6 @@ float voltageOut(float adcNumber){
    long totalRes = r1 + r2; // 252900
    float number = adcNumber / r2;
    float vOut =   number * totalRes;
-   Serial.print("ADC Number : ");
-   Serial.println(adcNumber);
-   Serial.print("total resistance: ");
-   Serial.println(totalRes);
-   Serial.print("Voltage = ");
-   Serial.println(number,7);
    return vOut;
 }
 
